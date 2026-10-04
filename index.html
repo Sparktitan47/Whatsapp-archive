@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>WhatsApp Chat Archive</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <main class="app">
+
+        <section class="upload-screen">
+
+            <div class="logo">
+                💬
+            </div>
+
+            <h1>WhatsApp Chat Archive</h1>
+
+            <p>
+                Upload an exported WhatsApp chat ZIP file
+                to view your conversation.
+            </p>
+
+            <label for="chatFile" class="upload-button">
+                Choose Chat ZIP
+            </label>
+
+            <input
+                type="file"
+                id="chatFile"
+                accept=".zip"
+                hidden
+            >
+
+            <p id="fileStatus" class="status">
+                No file selected
+            </p>
+
+        </section>
+
+
+        <section class="chat-container hidden">
+<div id="user-selection" class="user-selection hidden">
+
+    <h2>Who's using this archive?</h2>
+
+    <p>
+        Select your name so we can display your
+        messages on the right.
+    </p>
+
+    <div id="participant-list"></div>
+
+</div>
+            <header class="chat-header">
+
+                <div class="avatar">
+                    👤
+                </div>
+
+                <div>
+                    <h2 id="chatName">Chat Archive</h2>
+                    <span id="messageCount">
+                        0 messages
+                    </span>
+                </div>
+
+            </header>
+
+
+           <div class="search-container">
+
+    <input
+        type="text"
+        id="searchInput"
+        placeholder="Search messages..."
+    >
+
+    <div class="search-controls">
+
+        <button id="previousResult">
+            ↑
+        </button>
+
+        <span id="searchPosition">
+            0 / 0
+        </span>
+
+        <button id="nextResult">
+            ↓
+        </button>
+
+    </div>
+
+</div>
+
+            <div id="messages" class="messages">
+
+                <!-- Messages will be inserted here -->
+
+            </div>
+
+        </section>
+
+    </main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
