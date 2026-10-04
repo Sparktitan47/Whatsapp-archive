@@ -95,6 +95,8 @@ let currentUser = null;
 
 let archiveChats = [];
 
+let archiveStorageReady = Promise.resolve();
+
 let currentChat = null;
 
 let pendingChat = null;
@@ -151,12 +153,18 @@ chatFile.addEventListener(
 
         try {
 
+            await archiveStorageReady;
+
+            if (!window.JSZip) {
+                throw new Error("JSZip is not available");
+            }
+
             // ========================================
             // LOAD MASTER ZIP
             // ========================================
 
-            const zip =
-                await JSZip.loadAsync(file);
+            const archiveBytes = await readSelectedFile(file);
+            const zip = await JSZip.loadAsync(archiveBytes);
 
 
             console.log(
@@ -184,6 +192,8 @@ chatFile.addEventListener(
             const innerArchives =
                 findInnerChatArchives(zip);
 
+            const rootChatFiles = findChatFiles(zip);
+
 
             console.log(
                 "Inner chat archives found:",
@@ -195,76 +205,19 @@ chatFile.addEventListener(
             // IF INNER ZIPS EXIST
             // ========================================
 
-            if (
-                innerArchives.length > 0
-            ) {
+            if (innerArchives.length > 0 || rootChatFiles.length > 0) {
 
                 fileStatus.textContent =
-                    `Found ${innerArchives.length} chat archive${
-                        innerArchives.length === 1
-                            ? ""
-                            : "s"
+                    `Found ${innerArchives.length + rootChatFiles.length} chat export file${
+                        innerArchives.length + rootChatFiles.length === 1 ? "" : "s"
                     }.`;
 
                 
-                await processInnerArchives(
-                    innerArchives
-                );
-
-
+                await processArchiveContents(innerArchives, rootChatFiles);
                 return;
-
             }
 
-
-            // ========================================
-            // SINGLE CHAT ZIP
-            // ========================================
-
-            const chatFileEntry =
-                findChatFile(zip);
-
-
-            if (!chatFileEntry) {
-
-                fileStatus.textContent =
-                    "Could not find a WhatsApp chat text file.";
-
-                return;
-
-            }
-
-
-            console.log(
-                "Chat file found:",
-                chatFileEntry.name
-            );
-
-
-            const chatText =
-                await chatFileEntry.async("text");
-
-
-            allMessages =
-                parseWhatsAppChat(
-                    chatText
-                );
-
-
-            const addedCount = await addChatsToArchive([
-                createChatObject(chatFile.name, allMessages, chatText)
-            ]);
-
-
-            fileStatus.textContent =
-                addedCount
-                    ? `Saved ${allMessages.length} messages from ${addedCount} new conversation.`
-                    : "This conversation is already in your archive.";
-
-
-            displayChatList();
-
-            showArchiveHome();
+            fileStatus.textContent = "No WhatsApp chat text or nested ZIP files were found in this archive.";
 
         }
 
@@ -277,8 +230,11 @@ chatFile.addEventListener(
             );
 
 
-            fileStatus.textContent =
-                "Something went wrong while reading the ZIP file.";
+            fileStatus.textContent = error.name === "NotReadableError"
+                ? "The selected ZIP became unavailable. Save it to this device, then choose it again."
+                : error.message === "JSZip is not available"
+                    ? "The ZIP reader did not load. Check your connection and refresh the page."
+                    : "The ZIP could not be read. Make sure it is a valid archive and try selecting it again.";
 
         }
 
@@ -288,6 +244,24 @@ chatFile.addEventListener(
 
     }
 );
+
+async function readSelectedFile(file) {
+    try {
+        if (typeof file.arrayBuffer === "function") {
+            return await file.arrayBuffer();
+        }
+    } catch (arrayBufferError) {
+        // Fall through to FileReader for browser file-provider compatibility.
+    }
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new DOMException("The selected file could not be read.", "NotReadableError"));
+        reader.onabort = () => reject(new DOMException("Reading the selected file was interrupted.", "NotReadableError"));
+        reader.readAsArrayBuffer(file);
+    });
+}
 
 
 // ========================================
@@ -339,9 +313,7 @@ function findInnerChatArchives(zip) {
 // PROCESS INNER CHAT ARCHIVES
 // ========================================
 
-async function processInnerArchives(
-    innerArchives
-) {
+async function processArchiveContents(innerArchives, rootChatFiles) {
 
     const newChats = [];
 
@@ -378,13 +350,8 @@ async function processInnerArchives(
             // FIND CHAT TXT FILE
             // ========================================
 
-            const chatTextFile =
-                findChatFile(
-                    innerZip
-                );
-
-
-            if (!chatTextFile) {
+            const chatTextFiles = findChatFiles(innerZip);
+            if (!chatTextFiles.length) {
 
                 console.warn(
                     "No chat text file found in:",
@@ -400,32 +367,13 @@ async function processInnerArchives(
             // READ CHAT TEXT
             // ========================================
 
-            const chatText =
-                await chatTextFile.async(
-                    "text"
-                );
-
-
-            // ========================================
-            // PARSE CHAT
-            // ========================================
-
-            const messages =
-                parseWhatsAppChat(
-                    chatText
-                );
-
-
-            // ========================================
-            // CREATE CHAT OBJECT
-            // ========================================
-
-            const chat = createChatObject(archive.name, messages, chatText);
-
-
-            newChats.push(
-                chat
-            );
+            for (const chatTextFile of chatTextFiles) {
+                const chatText = await chatTextFile.async("text");
+                const messages = parseWhatsAppChat(chatText);
+                if (messages.length) {
+                    newChats.push(createChatObject(`${archive.name}/${chatTextFile.name}`, messages));
+                }
+            }
 
         }
 
@@ -439,6 +387,18 @@ async function processInnerArchives(
 
         }
 
+    }
+
+    for (const chatTextFile of rootChatFiles) {
+        try {
+            const chatText = await chatTextFile.async("text");
+            const messages = parseWhatsAppChat(chatText);
+            if (messages.length) {
+                newChats.push(createChatObject(chatTextFile.name, messages));
+            }
+        } catch (error) {
+            console.error(`Could not process ${chatTextFile.name}:`, error);
+        }
     }
 
 
@@ -459,13 +419,15 @@ async function processInnerArchives(
 
 
     fileStatus.textContent =
-        addedCount
-            ? `Saved ${addedCount} new conversation${
+        !newChats.length
+            ? "No readable WhatsApp chat text was found in this ZIP."
+            : addedCount
+                ? `Saved ${addedCount} new conversation${
             addedCount === 1
                 ? ""
                 : "s"
-        }.`
-            : "Those conversations are already in your archive.";
+            }.`
+                : "Those conversations are already in your archive.";
 
 }
 
@@ -474,41 +436,15 @@ async function processInnerArchives(
 // FIND WHATSAPP CHAT FILE
 // ========================================
 
-function findChatFile(zip) {
+function findChatFiles(zip) {
 
     const fileNames =
         Object.keys(zip.files);
 
 
-    for (
-        const fileName of fileNames
-    ) {
-
-        const file =
-            zip.files[fileName];
-
-
-        if (file.dir) {
-
-            continue;
-
-        }
-
-
-        if (
-            fileName
-                .toLowerCase()
-                .endsWith(".txt")
-        ) {
-
-            return file;
-
-        }
-
-    }
-
-
-    return null;
+    return fileNames
+        .map(fileName => zip.files[fileName])
+        .filter(file => !file.dir && file.name.toLowerCase().endsWith(".txt"));
 
 }
 
@@ -519,8 +455,7 @@ function findChatFile(zip) {
 
 function createChatObject(
     fileName,
-    messages,
-    sourceText = ""
+    messages
 ) {
 
     const name =
@@ -537,13 +472,13 @@ function createChatObject(
             : null;
 
 
-    const sourceHash = createContentHash(`${fileName}\0${sourceText || JSON.stringify(messages)}`);
+    const contentHash = createContentHash(JSON.stringify(messages));
 
     return {
 
-        id: `chat-${sourceHash}`,
+        id: `chat-${contentHash}`,
 
-        sourceHash,
+        contentHash,
 
         name:
             name,
@@ -637,17 +572,19 @@ async function saveChatsToStorage(chats) {
 }
 
 async function addChatsToArchive(chats) {
-    const existingHashes = new Set(archiveChats.map(chat => chat.sourceHash));
+    const existingHashes = new Set(archiveChats.map(getChatContentHash));
     const addedChats = chats.filter(chat => {
-        if (existingHashes.has(chat.sourceHash)) return false;
-        existingHashes.add(chat.sourceHash);
+        chat.contentHash = getChatContentHash(chat);
+        chat.id = `chat-${chat.contentHash}`;
+        if (existingHashes.has(chat.contentHash)) return false;
+        existingHashes.add(chat.contentHash);
         return true;
     });
     archiveChats.push(...addedChats);
 
     try {
         if (addedChats.length) await saveChatsToStorage(addedChats);
-        storageStatus.textContent = "Chats are saved on this device";
+        storageStatus.textContent = `${archiveChats.length} saved conversation${archiveChats.length === 1 ? "" : "s"} on this device`;
     } catch (error) {
         console.error("Could not save chats locally:", error);
         storageStatus.textContent = "This browser could not save chats for later";
@@ -655,6 +592,23 @@ async function addChatsToArchive(chats) {
     }
 
     return addedChats.length;
+}
+
+function getChatContentHash(chat) {
+    if (chat.contentHash) return chat.contentHash;
+    const messages = chat.messages || [];
+    if (!messages.length) return chat.sourceHash || chat.id;
+    return createContentHash(JSON.stringify(messages));
+}
+
+function removeDuplicateChats(chats) {
+    const seen = new Set();
+    return chats.filter(chat => {
+        chat.contentHash = getChatContentHash(chat);
+        if (seen.has(chat.contentHash)) return false;
+        seen.add(chat.contentHash);
+        return true;
+    });
 }
 
 
@@ -672,10 +626,10 @@ function extractChatName(
             .pop();
 
 
-    // Remove .zip
+    // Remove archive and text file extensions
     name =
         name.replace(
-            /\.zip$/i,
+            /\.(zip|txt)$/i,
             ""
         );
 
@@ -1690,15 +1644,12 @@ chatSearchInput.addEventListener(
 // ADD ARCHIVE BUTTON
 // ========================================
 
-addArchiveButton.addEventListener(
-    "click",
-    function () {
-
+addArchiveButton.addEventListener("keydown", event => {
+    if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
         chatFile.click();
-
     }
-);
-
+});
 
 // ========================================
 // HIGHLIGHT SEARCH
@@ -1890,18 +1841,20 @@ function escapeHTML(
 // START APPLICATION
 // ========================================
 
-async function startApplication() {
+function startApplication() {
     showArchiveHome();
-    try {
-        archiveChats = await loadChatsFromStorage();
-        storageStatus.textContent = archiveChats.length
-            ? `${archiveChats.length} saved conversation${archiveChats.length === 1 ? "" : "s"} on this device`
-            : "Chats are saved on this device";
-    } catch (error) {
-        console.error("Could not load saved chats:", error);
-        storageStatus.textContent = "Local storage unavailable in this browser";
-    }
-    displayChatList();
+    archiveStorageReady = loadChatsFromStorage()
+        .then(chats => {
+            archiveChats = removeDuplicateChats(chats);
+            storageStatus.textContent = archiveChats.length
+                ? `${archiveChats.length} saved conversation${archiveChats.length === 1 ? "" : "s"} on this device`
+                : "Chats are saved on this device";
+        })
+        .catch(error => {
+            console.error("Could not load saved chats:", error);
+            storageStatus.textContent = "Local storage unavailable in this browser";
+        })
+        .finally(displayChatList);
 }
 
 startApplication();

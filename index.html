@@ -61,22 +61,15 @@
             </label>
 
 
-            <input
-                type="file"
-                id="chatFile"
-                accept=".zip"
-                hidden
-            >
-
-
-            <div
-                id="fileStatus"
-                class="status"
-            >
-                No archive loaded
-            </div>
-
         </section>
+
+        <input
+            type="file"
+            id="chatFile"
+            class="file-picker-input"
+            accept=".zip,application/zip,application/x-zip-compressed"
+            aria-label="Choose a WhatsApp chat ZIP archive"
+        >
 
 
 
@@ -103,16 +96,24 @@
 
                     <span id="storageStatus" class="storage-status">Chats are saved on this device</span>
 
+                    <div id="fileStatus" class="status" role="status" aria-live="polite">
+                        Ready to add a WhatsApp ZIP
+                    </div>
+
                 </div>
 
 
-                <button
+                <label
+                    for="chatFile"
                     id="addArchiveButton"
-                    class="header-button"
+                    class="header-button add-archive-label"
                     title="Add archive"
+                    aria-label="Add archive"
+                    role="button"
+                    tabindex="0"
                 >
                     +
-                </button>
+                </label>
 
             </header>
 

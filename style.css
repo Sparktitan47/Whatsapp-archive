@@ -104,6 +104,18 @@ body {
 
 }
 
+.file-picker-input {
+    position: fixed;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
 
 /* ========================================
    UPLOAD SCREEN
@@ -314,6 +326,12 @@ body {
     font-size: 11px;
 }
 
+.archive-header .status {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.35;
+}
+
 
 /* ========================================
    HEADER BUTTON
@@ -344,6 +362,13 @@ body {
         background 0.2s ease,
         transform 0.2s ease;
 
+}
+
+.add-archive-label {
+    display: grid;
+    place-items: center;
+    padding: 0;
+    text-decoration: none;
 }
 
 
