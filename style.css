@@ -745,7 +745,7 @@ body {
 
 .back-button {
 
-    width: 38px;
+    width: auto;
 
     height: 38px;
 
@@ -754,6 +754,16 @@ body {
     border: none;
 
     border-radius: 50%;
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 5px;
+
+    padding: 0 10px;
 
     background:
         transparent;
@@ -768,6 +778,17 @@ body {
     transition:
         background 0.2s ease;
 
+}
+
+.back-button span:first-child {
+    font-size: 21px;
+    line-height: 1;
+}
+
+.selection-back-button {
+    align-self: flex-start;
+    margin-bottom: 18px;
+    border-radius: 20px;
 }
 
 
@@ -1544,8 +1565,9 @@ body {
     }
 
     .back-button {
-        width: 34px;
+        width: auto;
         height: 34px;
+        padding-inline: 8px;
     }
 
     .avatar {

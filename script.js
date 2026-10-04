@@ -57,6 +57,8 @@ const storageStatus = document.getElementById("storageStatus");
 const backToArchive =
     document.getElementById("backToArchive");
 
+const backFromParticipants = document.getElementById("backFromParticipants");
+
 
 // ========================================
 // PARTICIPANT SELECTION
@@ -1175,6 +1177,11 @@ backToArchive.addEventListener(
 
     }
 );
+
+backFromParticipants.addEventListener("click", () => {
+    userSelection.classList.add("hidden");
+    archiveHome.classList.remove("hidden");
+});
 
 
 // ========================================
