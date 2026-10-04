@@ -1,34 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>WhatsApp Chat Archive</title>
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-    <link rel="stylesheet" href="style.css">
+    <meta name="theme-color" content="#00a884">
+
+    <title>WhatsApp Archive</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
 </head>
+
 
 <body>
 
-    <main class="app">
+    <div class="app">
 
-        <section class="upload-screen">
+
+        <!-- ========================================
+             UPLOAD SCREEN
+        ======================================== -->
+
+        <section
+            class="upload-screen"
+            id="uploadScreen"
+        >
 
             <div class="logo">
                 💬
             </div>
 
-            <h1>WhatsApp Chat Archive</h1>
+
+            <h1>
+                WhatsApp Archive
+            </h1>
+
 
             <p>
-                Upload an exported WhatsApp chat ZIP file
-                to view your conversation.
+                View your exported WhatsApp
+                conversations in a clean,
+                familiar chat interface.
             </p>
 
-            <label for="chatFile" class="upload-button">
-                Choose Chat ZIP
+
+            <label
+                for="chatFile"
+                class="upload-button"
+            >
+                Upload Chat ZIP
             </label>
+
 
             <input
                 type="file"
@@ -37,79 +68,251 @@
                 hidden
             >
 
-            <p id="fileStatus" class="status">
-                No file selected
-            </p>
+
+            <div
+                id="fileStatus"
+                class="status"
+            >
+                No archive loaded
+            </div>
 
         </section>
 
 
-        <section class="chat-container hidden">
-<div id="user-selection" class="user-selection hidden">
 
-    <h2>Who's using this archive?</h2>
+        <!-- ========================================
+             ARCHIVE HOME
+        ======================================== -->
 
-    <p>
-        Select your name so we can display your
-        messages on the right.
-    </p>
+        <section
+            id="archive-home"
+            class="archive-home hidden"
+        >
 
-    <div id="participant-list"></div>
-
-</div>
-            <header class="chat-header">
-
-                <div class="avatar">
-                    👤
-                </div>
+            <header class="archive-header">
 
                 <div>
-                    <h2 id="chatName">Chat Archive</h2>
-                    <span id="messageCount">
-                        0 messages
-                    </span>
+
+                    <h1>
+                        WhatsApp Archive
+                    </h1>
+
+                    <p>
+                        Your archived conversations
+                    </p>
+
+                    <span id="storageStatus" class="storage-status">Chats are saved on this device</span>
+
                 </div>
+
+
+                <button
+                    id="addArchiveButton"
+                    class="header-button"
+                    title="Add archive"
+                >
+                    +
+                </button>
 
             </header>
 
 
-           <div class="search-container">
+            <!-- Search conversations -->
 
-    <input
-        type="text"
-        id="searchInput"
-        placeholder="Search messages..."
-    >
+            <div class="archive-search">
 
-    <div class="search-controls">
+                <input
+                    type="text"
+                    id="chatSearchInput"
+                    placeholder="Search conversations..."
+                    autocomplete="off"
+                >
 
-        <button id="previousResult">
-            ↑
-        </button>
+            </div>
 
-        <span id="searchPosition">
-            0 / 0
-        </span>
 
-        <button id="nextResult">
-            ↓
-        </button>
+            <!-- Conversation list -->
 
-    </div>
-
-</div>
-
-            <div id="messages" class="messages">
-
-                <!-- Messages will be inserted here -->
+            <div
+                id="chatList"
+                class="chat-list"
+            >
 
             </div>
 
         </section>
 
-    </main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="script.js"></script>
+
+
+        <!-- ========================================
+             PARTICIPANT SELECTION
+        ======================================== -->
+
+        <section
+            id="userSelection"
+            class="user-selection hidden"
+        >
+
+            <h2>
+                Who are you?
+            </h2>
+
+
+            <p>
+                Select your name so the archive
+                can display your messages correctly.
+            </p>
+
+
+            <div
+                id="participant-list"
+            >
+            </div>
+
+        </section>
+
+
+
+        <!-- ========================================
+             CHAT SCREEN
+        ======================================== -->
+
+        <section
+            class="chat-container hidden"
+        >
+
+
+            <!-- Chat header -->
+
+            <header class="chat-header">
+
+
+                <button
+                    id="backToArchive"
+                    class="back-button"
+                    title="Back to conversations"
+                >
+                    ←
+                </button>
+
+
+                <div class="avatar">
+                    👤
+                </div>
+
+
+                <div class="chat-header-info">
+
+                    <h2 id="chatName">
+                        Chat
+                    </h2>
+
+
+                    <span id="messageCount">
+                        0 messages
+                    </span>
+
+                </div>
+
+            </header>
+
+
+
+            <!-- ========================================
+                 MESSAGE SEARCH
+            ======================================== -->
+
+            <div class="search-container">
+
+                <div class="message-search-row">
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search messages..."
+                    autocomplete="off"
+                >
+
+                </div>
+
+
+                <label class="date-search-row">
+                    <span>Jump to date</span>
+                    <input
+                        type="date"
+                        id="dateSearchInput"
+                        aria-label="Jump to the first message on a date"
+                    >
+                </label>
+
+                <div id="dateSearchStatus" class="date-search-status" aria-live="polite"></div>
+
+
+                <div class="search-controls">
+
+                    <button
+                        id="previousResult"
+                        title="Previous result"
+                    >
+                        ↑
+                    </button>
+
+
+                    <span id="searchPosition">
+                        0 / 0
+                    </span>
+
+
+                    <button
+                        id="nextResult"
+                        title="Next result"
+                    >
+                        ↓
+                    </button>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- ========================================
+                 MESSAGES
+            ======================================== -->
+
+            <main
+                id="messages"
+                class="messages"
+            >
+
+            </main>
+
+
+        </section>
+
+
+    </div>
+
+
+    <!-- ========================================
+         JSZIP
+    ======================================== -->
+
+    <script
+        src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+        defer
+    ></script>
+
+
+    <!-- ========================================
+         APP JAVASCRIPT
+    ======================================== -->
+
+    <script
+        src="script.js"
+        defer
+    ></script>
 
 </body>
+
 </html>
